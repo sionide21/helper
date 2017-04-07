@@ -12,11 +12,12 @@ defmodule HelperCore.Server.Client do
 
   def handle_info({:tcp, _, packet}, socket) do
     IO.puts("Client sent: #{inspect(packet)}")
-    :ok = :gen_tcp.send(socket, "I HEAR YOU\n")
-    :gen_tcp.close(socket)
+    :ok = :gen_tcp.send(socket, "ok I HEARD YOU SAY #{inspect(packet)}\n")
+    accept_line(socket)
     {:noreply, socket}
   end
   def handle_info({:tcp_closed, _}, socket) do
+    IO.puts("Client disconnected")
     {:stop, {:shutdown, :client_disconnect}, socket}
   end
 

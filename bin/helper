@@ -1,0 +1,14 @@
+#!/bin/bash
+HELPER_PORT=1221
+
+if ! exec 3<>/dev/tcp/localhost/$HELPER_PORT 2> /dev/null; then
+  echo "Could not connect to H.E.L.P.eR." >&2
+  exit 1
+fi
+
+echo $@ >&3
+
+read -r -u 3 status response
+
+echo Status: $status
+echo Response: $response
