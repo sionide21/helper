@@ -11,8 +11,10 @@ defmodule HelperCore.Server.Client do
   end
 
   def handle_info({:tcp, _, packet}, socket) do
-    IO.puts("Client sent: #{inspect(packet)}")
-    :ok = :gen_tcp.send(socket, "ok I HEARD YOU SAY #{inspect(packet)}\n")
+    context = HelperCore.Context.new(packet, socket)
+
+    HelperCore.TestCommand.handle_command(context)
+
     accept_line(socket)
     {:noreply, socket}
   end

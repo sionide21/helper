@@ -1,14 +1,69 @@
 #!/bin/bash
 HELPER_PORT=1221
 
-if ! exec 3<>/dev/tcp/localhost/$HELPER_PORT 2> /dev/null; then
+open_port() {
+  exec 3<>/dev/tcp/localhost/$HELPER_PORT
+}
+
+send() {
+  echo "$@" >&3
+}
+
+send_raw() {
+  local NAME VALUE
+  NAME=$1
+  shift
+  VALUE="$@"
+  send "raw $NAME ${#VALUE}"
+  echo -n "$VALUE" >&3
+}
+
+receive_command() {
+  local CMD ARGUMENTS
+  if read -r -u 3 CMD ARGUMENTS; then
+    handle_$CMD "$ARGUMENTS"
+  else
+    echo "Connection to H.E.L.P.eR. lost" >&2
+    exit 1
+  fi
+}
+
+handle_echo() {
+  echo "$@"
+  receive_command
+}
+
+handle_error() {
+  echo "$@" >&2
+  receive_command
+}
+
+handle_raw() {
+  local MESSAGE
+  IFS= read -r -d '' -u 3 -n $1 MESSAGE
+  echo -n "$MESSAGE"
+  receive_command
+}
+
+handle_query() {
+  local RESULT
+  # This is a workaround to bash stripping trailing whitespace during command substitution
+  # By adding an `x` and the stripping it back off, we assure that there is never trailing
+  # whitespace, and preserve the original contents of the result
+  RESULT="$($@; printf x)"
+  send status $?
+  send_raw result "${RESULT%x}"
+  receive_command
+}
+
+handle_exit() {
+  exit $1
+}
+
+if ! open_port 2>/dev/null; then
   echo "Could not connect to H.E.L.P.eR." >&2
   exit 1
 fi
 
-echo $@ >&3
-
-read -r -u 3 status response
-
-echo Status: $status
-echo Response: $response
+send "$@"
+receive_command
