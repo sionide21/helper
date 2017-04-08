@@ -50,7 +50,7 @@ handle_query() {
   # This is a workaround to bash stripping trailing whitespace during command substitution
   # By adding an `x` and the stripping it back off, we assure that there is never trailing
   # whitespace, and preserve the original contents of the result
-  RESULT="$($@; printf x)"
+  RESULT="$($@ && printf x)"
   send status $?
   send_raw result "${RESULT%x}"
   receive_command
