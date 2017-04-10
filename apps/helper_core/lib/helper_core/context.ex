@@ -57,6 +57,10 @@ defmodule HelperCore.Context do
     execute(ctx, :exit, to_string(status))
   end
 
+  def parse_head(ctx, opts) do
+    OptionParser.parse_head(ctx.args, opts)
+  end
+
   def print(ctx, value) do
     execute(ctx, :print, value)
   end

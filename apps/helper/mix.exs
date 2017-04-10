@@ -38,6 +38,7 @@ defmodule Helper.Mixfile do
   defp deps do
     [
       {:helper_core, in_umbrella: true},
+      {:cache_commands, in_umbrella: true},
     ]
   end
 end
