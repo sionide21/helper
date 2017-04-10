@@ -5,8 +5,8 @@ defmodule HelperCore.Commands.Test do
   def handle_command(command) do
     command
     |> debug_inspect
-    |> execute(:echo, "CMD  #{command.name}")
-    |> execute(:echo, "ARGS #{command.args}")
+    |> echo("CMD  #{command.name}")
+    |> echo("ARGS #{command.args}")
     |> debug_inspect
 
     {:ok, files} = command
@@ -14,12 +14,8 @@ defmodule HelperCore.Commands.Test do
     |> debug_inspect
 
     command
-    |> execute(:print, files)
-
-    command
-    |> execute(:exit, 21)
-
-    command
+    |> print(files)
+    |> quit(21)
   end
 
   defp debug_inspect(value) do

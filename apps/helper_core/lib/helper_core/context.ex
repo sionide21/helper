@@ -29,9 +29,36 @@ defmodule HelperCore.Context do
   def execute(ctx, cmd, args) when cmd in [:echo, :error, :query, :exit] do
     send_client(ctx, "#{cmd} #{args}\n")
   end
+  def execute(ctx, :quit, args) do
+    # Alias quit to exit because exit is an Elixir.Kernel method
+    # and I don't want to override it for a helper method.
+    execute(ctx, :exit, args)
+  end
   def execute(ctx, :print, raw_message) do
     send_client(ctx, "raw #{byte_size(raw_message)}\n")
     send_client(ctx, raw_message)
+  end
+
+  def echo(ctx, value) do
+    execute(ctx, :echo, value)
+  end
+
+  def error(ctx, value) do
+    execute(ctx, :error, value)
+  end
+
+  def die(ctx, message, status \\ 1) do
+    ctx
+    |> error(message)
+    |> quit(status)
+  end
+
+  def quit(ctx, status \\ 0) do
+    execute(ctx, :exit, to_string(status))
+  end
+
+  def print(ctx, value) do
+    execute(ctx, :print, value)
   end
 
   def query(ctx, cmd) do

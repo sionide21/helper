@@ -4,11 +4,11 @@ defmodule HelperCore.Commands.TestServerSide do
 
   def handle_command(command) do
     {:ok, dir} = query(command, "pwd")
-    execute(command, :echo, "PWD #{String.trim(dir)}")
+    echo(command, "PWD #{String.trim(dir)}")
 
     {files, 0} = System.cmd("ls", ["-l"], cd: String.trim(dir))
     command
-    |> execute(:print, files)
-    |> execute(:exit, 0)
+    |> print(files)
+    |> quit()
   end
 end
