@@ -12,8 +12,7 @@ defmodule HelperCore.Server.Client do
 
   def handle_info({:tcp, _, packet}, socket) do
     context = HelperCore.Context.new(packet, socket)
-
-    HelperCore.CommandRunner.dispatch(context.name, context)
+    HelperCore.CommandDispatch.handle_command(context)
 
     accept_line(socket)
     {:noreply, socket}
