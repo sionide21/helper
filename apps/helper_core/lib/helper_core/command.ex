@@ -6,6 +6,7 @@ defmodule HelperCore.Command do
   defmacro __using__(_) do
     quote location: :keep do
       @behaviour HelperCore.Command
+      import HelperCore.Context
     end
   end
 end
