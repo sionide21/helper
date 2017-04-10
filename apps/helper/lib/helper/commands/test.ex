@@ -6,7 +6,7 @@ defmodule Helper.Commands.Test do
     command
     |> debug_inspect
     |> echo("CMD  #{command.name}")
-    |> echo("ARGS #{command.args}")
+    |> echo("ARGS #{inspect(command.args)}")
     |> debug_inspect
 
     {:ok, files} = command

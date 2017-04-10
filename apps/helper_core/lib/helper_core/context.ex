@@ -2,19 +2,19 @@ defmodule HelperCore.Context do
   require Logger
   @type t :: %__MODULE__{
             name: String.t,
-            args: String.t,
+            args: [String.t],
             socket: :socket,
             assigns: Map.t}
 
   defstruct name: nil,
             socket: nil,
-            args: nil,
+            args: [],
             assigns: %{}
 
   def new(command, socket) do
     context = %__MODULE__{socket: socket}
     {name, args} = parse_line(command, context)
-    %__MODULE__{context | name: name, args: args}
+    %__MODULE__{context | name: name, args: OptionParser.split(args)}
   end
 
   def read_value(ctx) do
@@ -105,7 +105,7 @@ defmodule HelperCore.Context do
   end
 
   defimpl String.Chars, for: __MODULE__ do
-    def to_string(%{args: ""}=context), do: context.name
-    def to_string(context), do: "#{context.name} #{context.args}"
+    def to_string(%{args: []}=context), do: context.name
+    def to_string(context), do: "#{context.name} #{Enum.join(context.args, " ")}"
   end
 end
