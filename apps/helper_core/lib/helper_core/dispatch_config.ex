@@ -1,8 +1,8 @@
-defmodule HelperCore.CommandDispatch.Config do
+defmodule HelperCore.DispatchConfig do
   defmacro __using__(_) do
     quote do
       use HelperCore.Command
-      import HelperCore.CommandDispatch.Config
+      import HelperCore.DispatchConfig
 
       def handle_command(command) do
         command.name

@@ -1,5 +1,6 @@
 defmodule HelperCore.Server.Client do
   use GenServer
+  @command Application.get_env(:helper_core, :command)
 
   def start_link(socket) do
     GenServer.start_link(__MODULE__, socket: socket)
@@ -12,7 +13,7 @@ defmodule HelperCore.Server.Client do
 
   def handle_info({:tcp, _, packet}, socket) do
     context = HelperCore.Context.new(packet, socket)
-    HelperCore.CommandDispatch.handle_command(context)
+    @command.handle_command(context)
 
     accept_line(socket)
     {:noreply, socket}
