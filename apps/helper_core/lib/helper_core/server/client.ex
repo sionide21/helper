@@ -13,6 +13,7 @@ defmodule HelperCore.Server.Client do
   end
 
   def init(socket: socket) do
+    Logger.info("Client connected")
     accept_line(socket)
     {:ok, %State{socket: socket}}
   end
@@ -31,6 +32,7 @@ defmodule HelperCore.Server.Client do
   end
   def handle_info({:tcp, _, packet}, %{socket: socket, authenticated: true}=state) do
     context = HelperCore.Context.new(packet, socket)
+    Logger.info("Command: #{context}")
     @command.handle_command(context)
 
     accept_line(socket)
@@ -41,7 +43,7 @@ defmodule HelperCore.Server.Client do
     {:stop, {:shutdown, :unauthorized}, state}
   end
   def handle_info({:tcp_closed, _}, state) do
-    IO.puts("Client disconnected")
+    Logger.info("Client disconnected")
     {:stop, {:shutdown, :client_disconnect}, state}
   end
 

@@ -1,16 +1,17 @@
 defmodule HelperCore.Commands.Test do
+  require Logger
   use HelperCore.Command
 
   def handle_command(command) do
     command
-    |> IO.inspect
+    |> debug_inspect
     |> execute(:echo, "CMD  #{command.name}")
     |> execute(:echo, "ARGS #{command.args}")
-    |> IO.inspect
+    |> debug_inspect
 
     {:ok, files} = command
     |> query("ls -l")
-    |> IO.inspect
+    |> debug_inspect
 
     command
     |> execute(:print, files)
@@ -19,5 +20,13 @@ defmodule HelperCore.Commands.Test do
     |> execute(:exit, 21)
 
     command
+  end
+
+  defp debug_inspect(value) do
+    value
+    |> inspect()
+    |> Logger.debug()
+
+    value
   end
 end

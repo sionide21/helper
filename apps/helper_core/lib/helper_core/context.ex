@@ -1,4 +1,5 @@
 defmodule HelperCore.Context do
+  require Logger
   @type t :: %__MODULE__{
             name: String.t,
             args: String.t,
@@ -45,7 +46,7 @@ defmodule HelperCore.Context do
   end
 
   defp send_client(ctx=%__MODULE__{socket: socket}, value) do
-    IO.inspect({:send_client, value})
+    Logger.debug(inspect({:send_client, value}))
     :gen_tcp.send(socket, value)
     ctx
   end
@@ -56,7 +57,7 @@ defmodule HelperCore.Context do
   end
 
   defp parse_line(line, context) do
-    IO.inspect({:parse_line, line})
+    Logger.debug(inspect({:parse_line, line}))
     line
     |> String.trim
     |> String.split(" ")
@@ -74,5 +75,10 @@ defmodule HelperCore.Context do
     {:ok, result} = :gen_tcp.recv(socket, length)
     :inet.setopts(socket, packet: :line)
     result
+  end
+
+  defimpl String.Chars, for: __MODULE__ do
+    def to_string(%{args: ""}=context), do: context.name
+    def to_string(context), do: "#{context.name} #{context.args}"
   end
 end
