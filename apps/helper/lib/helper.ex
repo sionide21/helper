@@ -1,6 +1,6 @@
-defmodule HelperCore.Commands.Dispatch do
+defmodule Helper do
   use HelperCore.DispatchConfig
-  alias HelperCore.Commands
+  alias Helper.Commands
 
   command "test", Commands.Test
   command "ls",   Commands.TestServerSide

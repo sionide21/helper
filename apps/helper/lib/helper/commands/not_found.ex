@@ -1,4 +1,4 @@
-defmodule HelperCore.Commands.NotFound do
+defmodule Helper.Commands.NotFound do
   use HelperCore.Command
 
   def handle_command(command) do

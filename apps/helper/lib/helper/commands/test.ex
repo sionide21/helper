@@ -1,4 +1,4 @@
-defmodule HelperCore.Commands.Test do
+defmodule Helper.Commands.Test do
   require Logger
   use HelperCore.Command
 
