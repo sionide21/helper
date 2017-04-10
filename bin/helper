@@ -1,8 +1,13 @@
 #!/bin/bash
 HELPER_PORT=1221
+HELPER_CONF="$HOME/.helper"
 
 open_port() {
   exec 3<>/dev/tcp/localhost/$HELPER_PORT
+}
+
+authenticate() {
+  send auth "$(cat $HELPER_CONF/auth)"
 }
 
 send() {
@@ -65,5 +70,6 @@ if ! open_port 2>/dev/null; then
   exit 1
 fi
 
+authenticate
 send "$@"
 receive_command
