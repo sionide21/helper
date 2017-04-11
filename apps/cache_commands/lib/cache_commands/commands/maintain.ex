@@ -22,7 +22,7 @@ defmodule CacheCommands.Commands.Maintain do
   defp parse(command) do
     with {opts, cmd, _} <- parse_head(command, strict: [refresh: :string]),
          {:ok, refresh} <- opts |> Keyword.get(:refresh, "10m") |> parse_refresh(),
-    do: {:ok, Enum.join(cmd, " "), refresh}
+    do: {:ok, cmd, refresh}
   end
 
   defp parse_refresh(str) when is_binary(str) do

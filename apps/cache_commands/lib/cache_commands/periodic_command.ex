@@ -1,7 +1,11 @@
 defmodule CacheCommands.PeriodicCommand do
   use GenServer
   require Logger
-  alias CacheCommands.CommandRegistry
+  alias CacheCommands.{CommandRegistry, Runner}
+
+  defmodule State do
+    defstruct [command: nil, runner: nil, timer: nil, refresh: nil, result: nil]
+  end
 
   def start_link(command) do
     GenServer.start_link(__MODULE__, [command], name: name(command))
@@ -12,37 +16,48 @@ defmodule CacheCommands.PeriodicCommand do
   end
 
   def init([command]) do
-    {:ok, %{command: command}}
+    {:ok, runner} = Runner.start_link()
+    {:ok, %State{command: command, runner: runner}}
   end
 
   def get(pid, refresh: refresh) do
-    GenServer.call(pid, {:get, refresh: refresh})
+    GenServer.call(pid, {:get, refresh: 1000 * refresh})
   end
 
-  def handle_call({:get, refresh: refresh}, _from, state) do
-    with {:ok, result} <- execute(state.command, refresh: refresh)
+  def handle_call({:get, refresh: refresh}, _from, state=%{result: nil}) do
+    with {:ok, result} <- Runner.execute(state.runner, state.command),
+         timer <- Process.send_after(self(), :refresh, refresh),
+         state <- %{state | result: result, timer: timer, refresh: refresh}
     do
       {:reply, {:ok, result}, state}
     else
       e -> {:reply, e, state}
     end
   end
-
-  defp execute(cmd, refresh: _) do
-    with [cmd | args] <- OptionParser.split(cmd),
-         {results, 0} <- System.cmd(cmd, args)
-    do
-      {:ok, results}
-    else
-      {error, status} -> {status, error}
+  def handle_call({:get, refresh: refresh}, _from, state=%{result: result, refresh: refresh}) do
+    {:reply, {:ok, result}, state}
+  end
+  def handle_call({:get, refresh: refresh}, _from, state=%{result: result, refresh: old_refresh}) do
+    Process.cancel_timer(state.timer)
+    |> case do
+      false ->
+        {:reply, {:ok, result}, %{state | refresh: refresh}}
+      remaining ->
+        new_time = max(0, refresh - (old_refresh - remaining))
+        Logger.debug("Refresh changed from #{old_refresh} to #{refresh}. Updating timer from #{remaining} to #{new_time}")
+        timer = Process.send_after(self(), :refresh, new_time)
+        {:reply, {:ok, result}, %{state | timer: timer, refresh: refresh}}
     end
-  rescue
-    e in ErlangError ->
-      case e.original do
-        :enoent -> {1, "#{cmd}: command not found"}
-        error -> {1, error}
-      end
-    e ->
-      {1, Exception.message(e)}
+  end
+
+  def handle_info(:refresh, state) do
+    Logger.debug("Refreshing \"#{state.command}\"")
+    with {:ok, result} <- Runner.execute(state.runner, state.command),
+         timer <- Process.send_after(self(), :refresh, state.refresh)
+    do
+      {:noreply, %{state | result: result, timer: timer}}
+    else
+      _ -> {:noreply, state}
+    end
   end
 end
