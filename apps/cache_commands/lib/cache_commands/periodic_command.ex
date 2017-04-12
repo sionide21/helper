@@ -25,29 +25,25 @@ defmodule CacheCommands.PeriodicCommand do
   end
 
   def handle_call({:get, refresh: refresh}, _from, state=%{result: nil}) do
-    with {:ok, result} <- Runner.execute(state.runner, state.command),
-         timer <- Process.send_after(self(), :refresh, refresh),
-         state <- %{state | result: result, timer: timer, refresh: refresh}
-    do
-      {:reply, {:ok, result}, state}
-    else
-      e -> {:stop, {:shutdown, e}, e, state}
-    end
-  end
-  def handle_call({:get, refresh: refresh}, _from, state=%{result: result, refresh: refresh}) do
-    {:reply, {:ok, result}, state}
-  end
-  def handle_call({:get, refresh: refresh}, _from, state=%{result: result, refresh: old_refresh}) do
-    Process.cancel_timer(state.timer)
+    Runner.execute(state.runner, state.command)
     |> case do
-      false ->
-        {:reply, {:ok, result}, %{state | refresh: refresh}}
-      remaining ->
-        new_time = max(0, refresh - (old_refresh - remaining))
-        Logger.debug("Refresh changed from #{old_refresh} to #{refresh}. Updating timer from #{remaining} to #{new_time}")
-        timer = Process.send_after(self(), :refresh, new_time)
-        {:reply, {:ok, result}, %{state | timer: timer, refresh: refresh}}
+      {:ok, result} ->
+        state
+        |> schedule_refresh(refresh)
+        |> set_interval(refresh)
+        |> cache_result(result)
+        |> send_result()
+      error ->
+        {:stop, {:shutdown, error}, error, state}
     end
+  end
+  def handle_call({:get, refresh: refresh}, _from, state=%{refresh: refresh}) do
+    send_result(state)
+  end
+  def handle_call({:get, refresh: refresh}, _from, state) do
+    state
+    |> change_interval(refresh)
+    |> send_result()
   end
 
   def handle_info(:refresh, state) do
@@ -56,11 +52,51 @@ defmodule CacheCommands.PeriodicCommand do
     {:noreply, state}
   end
   def handle_info({:result, {:ok, result}}, state) do
-    timer = Process.send_after(self(), :refresh, state.refresh)
-    {:noreply, %{state | result: result, timer: timer}}
+    state = state
+    |> schedule_refresh(state.refresh)
+    |> cache_result(result)
+
+    {:noreply, state}
   end
   def handle_info({:result, {status, error}}, state) do
     Logger.warn("Error refreshing \"#{state.command}\" (#{status}): #{inspect error}")
     {:stop, {:shutdown, error}, state}
+  end
+
+  defp schedule_refresh(state, wait) do
+    timer = Process.send_after(self(), :refresh, wait)
+    %{state | timer: timer}
+  end
+
+  defp change_interval(state, refresh) do
+    state.timer
+    |> Process.cancel_timer()
+    |> case do
+      remaining when is_integer(remaining) ->
+        reschedule(state, refresh, remaining)
+      false ->
+        set_interval(state, refresh)
+    end
+  end
+
+  defp reschedule(state, refresh, remaining) do
+    new_time = max(0, refresh - (state.refresh - remaining))
+    Logger.debug("Refresh changed from #{state.refresh} to #{refresh}. Updating timer from #{remaining} to #{new_time}")
+
+    state
+    |> schedule_refresh(new_time)
+    |> set_interval(refresh)
+  end
+
+  defp cache_result(state, result) do
+    %{state | result: result}
+  end
+
+  defp set_interval(state, interval) do
+    %{state | refresh: interval}
+  end
+
+  defp send_result(state) do
+    {:reply, {:ok, state.result}, state}
   end
 end
