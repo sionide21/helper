@@ -36,22 +36,14 @@ defmodule CacheCommands.Runner do
     |> log_value("Result")
   end
 
-  defp do_execute(cmd) do
-    with [cmd | args] <- cmd,
-         {results, 0} <- System.cmd(cmd, args)
-    do
-      {:ok, results}
-    else
-      {error, status} -> {status, error}
+  defp do_execute([cmd | args]) do
+    cmd
+    |> Porcelain.exec(args, err: :string)
+    |> case do
+      %{out: out, status: 0} -> {:ok, out}
+      %{err: err, status: s} -> {s, err}
+      {:error, error}        -> {1, error}
     end
-  rescue
-    e in ErlangError ->
-      case e.original do
-        :enoent -> {1, "#{cmd}: command not found"}
-        error -> {1, error}
-      end
-    e ->
-      {1, Exception.message(e)}
   end
 
   defp log_value(val, msg) do

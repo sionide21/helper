@@ -23,6 +23,7 @@ defmodule CacheCommands.Mixfile do
   defp deps do
     [
       {:helper_core, in_umbrella: true},
+      {:porcelain, "~> 2.0"},
     ]
   end
 end
