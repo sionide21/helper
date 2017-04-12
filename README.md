@@ -19,7 +19,7 @@ periodically so that there is always a copy available.
 Run `awssh --list` and then refresh the result every 10 minutes.
 
 ```
-helper maintain expire=10m awssh --list
+helper maintain --refresh 10m awssh --list
 ```
 
 Subsequent runs of this command will immediately return with the latest known results.
