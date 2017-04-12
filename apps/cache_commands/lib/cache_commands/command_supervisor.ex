@@ -14,12 +14,38 @@ defmodule CacheCommands.CommandSupervisor do
     supervise(children, strategy: :simple_one_for_one)
   end
 
-  def get_command(cmd) do
-    __MODULE__
+  def list_commands(opts \\ []) do
+    get_supervisor(opts)
+    |> Supervisor.which_children()
+    |> lookup_commands()
+    |> Enum.sort
+  end
+
+  def get_command(cmd, opts \\ []) do
+    get_supervisor(opts)
     |> Supervisor.start_child([cmd])
     |> case do
       {:ok, pid} -> pid
       {:error, {:already_started, pid}} -> pid
     end
+  end
+
+  defp get_supervisor(supervisor: sup), do: sup
+  defp get_supervisor(_), do: __MODULE__
+
+  defp lookup_commands(child_specs) do
+    lookup_commands([], child_specs)
+  end
+  defp lookup_commands(acc, [child_spec | rest]) do
+    lookup_command(child_spec)
+    |> Enum.concat(acc)
+    |> lookup_commands(rest)
+  end
+  defp lookup_commands(acc, []) do
+    acc
+  end
+
+  defp lookup_command({_, pid, _, _}) do
+    Registry.keys(CacheCommands.CommandRegistry, pid)
   end
 end
