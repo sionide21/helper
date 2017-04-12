@@ -26,7 +26,7 @@ defmodule HelperCore.Context do
   def execute(ctx, cmd, args) when is_list(args) do
     execute(ctx, cmd, Enum.join(args, " "))
   end
-  def execute(ctx, cmd, args) when cmd in [:echo, :error, :query, :exit] do
+  def execute(ctx, cmd, args) when cmd in [:query, :exit] do
     send_client(ctx, "#{cmd} #{args}\n")
   end
   def execute(ctx, :quit, args) do
@@ -34,8 +34,8 @@ defmodule HelperCore.Context do
     # and I don't want to override it for a helper method.
     execute(ctx, :exit, args)
   end
-  def execute(ctx, :print, raw_message) do
-    send_client(ctx, "raw #{byte_size(raw_message)}\n")
+  def execute(ctx, cmd, raw_message) when cmd in [:echo, :error, :print] do
+    send_client(ctx, "#{cmd} #{byte_size(raw_message)}\n")
     send_client(ctx, raw_message)
   end
 

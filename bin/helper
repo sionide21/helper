@@ -34,20 +34,24 @@ receive_command() {
 }
 
 handle_echo() {
-  echo "$@"
+  echo "$(read_raw $1)"
   receive_command
 }
 
 handle_error() {
-  echo "$@" >&2
+  read_raw $1 >&2
   receive_command
 }
 
-handle_raw() {
+handle_print() {
+  read_raw $1
+  receive_command
+}
+
+read_raw() {
   local MESSAGE
   IFS= read -r -d '' -u 3 -n $1 MESSAGE
   echo -n "$MESSAGE"
-  receive_command
 }
 
 handle_query() {

@@ -14,6 +14,10 @@ defmodule Helper.Commands.Test do
     |> debug_inspect
 
     command
+    |> echo("multi\n\tline echo")
+    |> error("multi\n\tline error\n")
+
+    command
     |> print(files)
     |> quit(21)
   end
