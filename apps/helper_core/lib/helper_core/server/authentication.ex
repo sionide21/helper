@@ -43,7 +43,7 @@ defmodule HelperCore.Server.Authentication do
     dir
     |> File.mkdir()
     |> case do
-      {:ok, _} -> {:ok, dir}
+      :ok -> {:ok, dir}
       {:error, :eexist} -> {:ok, dir}
       e -> e
     end
