@@ -31,7 +31,7 @@ defmodule CacheCommands.PeriodicCommand do
     do
       {:reply, {:ok, result}, state}
     else
-      e -> {:reply, e, state}
+      e -> {:stop, {:shutdown, e}, e, state}
     end
   end
   def handle_call({:get, refresh: refresh}, _from, state=%{result: result, refresh: refresh}) do
@@ -59,8 +59,8 @@ defmodule CacheCommands.PeriodicCommand do
     timer = Process.send_after(self(), :refresh, state.refresh)
     {:noreply, %{state | result: result, timer: timer}}
   end
-  def handle_info({:result, {:error, error}}, state) do
-    Logger.warn("Error refreshing \"#{state.command}\": #{inspect error}")
-    {:stop, error, state}
+  def handle_info({:result, {status, error}}, state) do
+    Logger.warn("Error refreshing \"#{state.command}\" (#{status}): #{inspect error}")
+    {:stop, {:shutdown, error}, state}
   end
 end
