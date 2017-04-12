@@ -31,6 +31,7 @@ defmodule CacheCommands.Commands.Maintain do
     |> parse_refresh()
   end
   defp parse_refresh({n, ""}),   do: {:ok, n}
+  defp parse_refresh({n, "s"}),  do: {:ok, n}
   defp parse_refresh({n, "m"}),  do: {:ok, n * 60}
   defp parse_refresh({n, "h"}),  do: {:ok, n * 60 * 60}
   defp parse_refresh({n, "d"}),  do: {:ok, n * 24 * 60 * 60}
