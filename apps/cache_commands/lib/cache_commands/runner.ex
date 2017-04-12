@@ -1,7 +1,6 @@
 defmodule CacheCommands.Runner do
   use GenServer
   require Logger
-  alias CacheCommands.CommandRegistry
 
   def start_link() do
     GenServer.start_link(__MODULE__, [])
@@ -12,10 +11,7 @@ defmodule CacheCommands.Runner do
   end
 
   def execute(pid, cmd) do
-    Logger.debug("Run #{inspect cmd}")
-    val = GenServer.call(pid, {:execute, cmd})
-    Logger.debug("Result #{inspect val}")
-    val
+    GenServer.call(pid, {:execute, cmd})
   end
 
   def execute_async(pid, cmd) do
@@ -34,6 +30,13 @@ defmodule CacheCommands.Runner do
   end
 
   defp execute(cmd) do
+    cmd
+    |> log_value("Run")
+    |> do_execute()
+    |> log_value("Result")
+  end
+
+  defp do_execute(cmd) do
     with [cmd | args] <- cmd,
          {results, 0} <- System.cmd(cmd, args)
     do
@@ -49,5 +52,10 @@ defmodule CacheCommands.Runner do
       end
     e ->
       {1, Exception.message(e)}
+  end
+
+  defp log_value(val, msg) do
+    Logger.debug("#{msg} #{inspect val}")
+    val
   end
 end

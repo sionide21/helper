@@ -52,12 +52,15 @@ defmodule CacheCommands.PeriodicCommand do
 
   def handle_info(:refresh, state) do
     Logger.debug("Refreshing \"#{state.command}\"")
-    with {:ok, result} <- Runner.execute(state.runner, state.command),
-         timer <- Process.send_after(self(), :refresh, state.refresh)
-    do
-      {:noreply, %{state | result: result, timer: timer}}
-    else
-      _ -> {:noreply, state}
-    end
+    Runner.execute_async(state.runner, state.command)
+    {:noreply, state}
+  end
+  def handle_info({:result, {:ok, result}}, state) do
+    timer = Process.send_after(self(), :refresh, state.refresh)
+    {:noreply, %{state | result: result, timer: timer}}
+  end
+  def handle_info({:result, {:error, error}}, state) do
+    Logger.warn("Error refreshing \"#{state.command}\": #{inspect error}")
+    {:stop, error, state}
   end
 end
