@@ -2,27 +2,36 @@ defmodule CacheCommands.Commands.Maintain do
   use HelperCore.Command
 
   def handle_command(command) do
-    case parse(command) do
-      {:ok, cmd, refresh} ->
-        cmd
-        |> CacheCommands.get(refresh: refresh)
-        |> case do
-          {:ok, value} ->
-            command
-            |> print(value)
-            |> quit()
-          {status, error} ->
-            die(command, error, status)
-        end
-      {:error, error} ->
-        die(command, error)
-    end
+    command
+    |> parse()
+    |> execute()
+    |> reply(command)
   end
 
   defp parse(command) do
     with {opts, cmd, _} <- parse_head(command, strict: [refresh: :string]),
-         {:ok, refresh} <- opts |> Keyword.get(:refresh, "10m") |> parse_refresh(),
+         {:ok, refresh} <- get_refresh(opts),
     do: {:ok, cmd, refresh}
+  end
+
+  defp execute({:ok, cmd, refresh}) do
+    CacheCommands.get(cmd, refresh: refresh)
+  end
+  defp execute(error), do: error
+
+  defp reply({:ok, value}, command) do
+    command
+    |> print(value)
+    |> quit()
+  end
+  defp reply({status, error}, command) do
+    die(command, error, status)
+  end
+
+  defp get_refresh(opts) do
+    opts
+    |> Keyword.get(:refresh, "10m")
+    |> parse_refresh()
   end
 
   defp parse_refresh(str) when is_binary(str) do
@@ -35,5 +44,5 @@ defmodule CacheCommands.Commands.Maintain do
   defp parse_refresh({n, "m"}),  do: {:ok, n * 60}
   defp parse_refresh({n, "h"}),  do: {:ok, n * 60 * 60}
   defp parse_refresh({n, "d"}),  do: {:ok, n * 24 * 60 * 60}
-  defp parse_refresh({_, unit}), do: {:error, "Unknown time unit: #{inspect unit}"}
+  defp parse_refresh({_, unit}), do: {1, "Unknown time unit: #{inspect unit}"}
 end
