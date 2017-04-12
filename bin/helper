@@ -39,7 +39,7 @@ handle_echo() {
 }
 
 handle_error() {
-  read_raw $1 >&2
+  echo "$(read_raw $1)" >&2
   receive_command
 }
 

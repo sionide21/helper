@@ -15,7 +15,7 @@ defmodule Helper.Commands.Test do
 
     command
     |> echo("multi\n\tline echo")
-    |> error("multi\n\tline error\n")
+    |> error("multi\n\tline error")
 
     command
     |> print(files)
