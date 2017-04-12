@@ -3,10 +3,12 @@ defmodule HelperCore.Context do
   @type t :: %__MODULE__{
             name: String.t,
             args: [String.t],
+            cmdline: String.t,
             socket: :socket,
             assigns: Map.t}
 
   defstruct name: nil,
+            cmdline: nil,
             socket: nil,
             args: [],
             assigns: %{}
@@ -14,7 +16,7 @@ defmodule HelperCore.Context do
   def new(command, socket) do
     context = %__MODULE__{socket: socket}
     {name, args} = parse_line(command, context)
-    %__MODULE__{context | name: name, args: OptionParser.split(args)}
+    %__MODULE__{context | name: name, args: OptionParser.split(args), cmdline: args}
   end
 
   def read_value(ctx) do
@@ -110,6 +112,6 @@ defmodule HelperCore.Context do
 
   defimpl String.Chars, for: __MODULE__ do
     def to_string(%{args: []}=context), do: context.name
-    def to_string(context), do: "#{context.name} #{Enum.join(context.args, " ")}"
+    def to_string(context), do: "#{context.name} #{context.cmdline}"
   end
 end
