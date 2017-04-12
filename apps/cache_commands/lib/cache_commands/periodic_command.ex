@@ -2,6 +2,7 @@ defmodule CacheCommands.PeriodicCommand do
   use GenServer
   require Logger
   alias CacheCommands.{CommandRegistry, Runner}
+  @timeout Application.get_env(:cache_commands, :timeout)
 
   defmodule State do
     defstruct [command: nil, runner: nil, timer: nil, refresh: nil, result: nil]
@@ -21,11 +22,11 @@ defmodule CacheCommands.PeriodicCommand do
   end
 
   def get(pid, refresh: refresh) do
-    GenServer.call(pid, {:get, refresh: 1000 * refresh})
+    GenServer.call(pid, {:get, refresh: 1000 * refresh}, @timeout)
   end
 
   def handle_call({:get, refresh: refresh}, _from, state=%{result: nil}) do
-    Runner.execute(state.runner, state.command)
+    Runner.execute(state.runner, state.command, @timeout)
     |> case do
       {:ok, result} ->
         state

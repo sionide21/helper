@@ -10,8 +10,8 @@ defmodule CacheCommands.Runner do
     {:ok, []}
   end
 
-  def execute(pid, cmd) do
-    GenServer.call(pid, {:execute, cmd})
+  def execute(pid, cmd, timeout) do
+    GenServer.call(pid, {:execute, cmd}, timeout)
   end
 
   def execute_async(pid, cmd) do
