@@ -11,6 +11,7 @@ defmodule CacheCommands.Mixfile do
      elixir: "~> 1.4",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
+     aliases: aliases(),
      deps: deps()]
   end
 
@@ -24,6 +25,12 @@ defmodule CacheCommands.Mixfile do
     [
       {:helper_core, in_umbrella: true},
       {:porcelain, "~> 2.0"},
+    ]
+  end
+
+  defp aliases do
+    [
+      test: "test --no-start",
     ]
   end
 end

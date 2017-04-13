@@ -48,7 +48,7 @@ defmodule CacheCommands.PeriodicCommand do
   end
 
   def handle_info(:refresh, state) do
-    Logger.debug("Refreshing #{inspect state.command}")
+    Logger.debug("Refreshing #{ARGV.to_string state.command}")
     Runner.execute_async(state.runner, state.command)
     {:noreply, state}
   end
@@ -60,7 +60,7 @@ defmodule CacheCommands.PeriodicCommand do
     {:noreply, state}
   end
   def handle_info({:result, {status, error}}, state) do
-    Logger.warn("Error refreshing #{inspect state.command} (#{status}): #{inspect error}")
+    Logger.warn("Error refreshing #{ARGV.to_string state.command} (#{status}): #{inspect error}")
     {:stop, {:shutdown, error}, state}
   end
 
