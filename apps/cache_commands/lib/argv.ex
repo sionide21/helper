@@ -1,4 +1,22 @@
 defmodule ARGV do
+  @doc """
+  Convert an args list back into the original command for nicer display.
+
+  *note* This is intended to make display nice, not to sanitize commands for
+         execution. It may not always properly escape inputs.
+
+  ## Examples
+
+      iex> ARGV.to_string(["ls", "-lh", "/usr/local"])
+      "ls -lh /usr/local"
+
+      iex> ARGV.to_string(["echo", "Hello World"])
+      ~s{echo "Hello World"}
+
+      iex> ARGV.to_string(["sh", "-c", ~s{cd /tmp && ls "*.txt"}])
+      ~s{sh -c 'cd /tmp && ls "*.txt"'}
+
+  """
   def to_string(argv) do
     argv
     |> Enum.map(&escape_arg/1)
@@ -39,7 +57,7 @@ defmodule ARGV do
   end
 
   defp has_special_chars?(arg) do
-    Regex.match?(~r/[^\w\s"'\-]/i, arg)
+    Regex.match?(~r/[^\w\s"'\-\/]/i, arg)
   end
 
   defp has_whitespace?(arg) do
