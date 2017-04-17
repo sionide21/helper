@@ -37,8 +37,7 @@ defmodule CacheCommands.CommandSupervisor do
     lookup_commands([], child_specs)
   end
   defp lookup_commands(acc, [child_spec | rest]) do
-    lookup_command(child_spec)
-    |> Enum.concat(acc)
+    [lookup_command(child_spec) | acc]
     |> lookup_commands(rest)
   end
   defp lookup_commands(acc, []) do
@@ -46,6 +45,6 @@ defmodule CacheCommands.CommandSupervisor do
   end
 
   defp lookup_command({_, pid, _, _}) do
-    Registry.keys(CacheCommands.CommandRegistry, pid)
+    PeriodicCommand.info(pid)
   end
 end

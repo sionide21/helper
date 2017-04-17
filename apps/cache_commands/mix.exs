@@ -25,6 +25,7 @@ defmodule CacheCommands.Mixfile do
     [
       {:helper_core, in_umbrella: true},
       {:porcelain, "~> 2.0"},
+      {:timex, "~> 3.1"},
     ]
   end
 

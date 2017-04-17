@@ -1,15 +1,14 @@
 defmodule CacheCommands.Commands.Status do
   use HelperCore.Command
-  alias CacheCommands.CommandSupervisor
+  alias CacheCommands.{CommandSupervisor, PeriodicCommand}
 
   def handle_command(command) do
     CommandSupervisor.list_commands()
-    |> Enum.map(&ARGV.to_string/1)
-    |> Enum.join("\t\n")
-    |> apply_fn(fn cmds ->
+    |> PeriodicCommand.Info.display(headers: true)
+    |> apply_fn(fn display ->
       command
-      |> echo("Commands Being Maintained:\n#{cmds}")
-      |> quit
+      |> echo(display)
+      |> quit()
     end)
   end
 

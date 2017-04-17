@@ -2,10 +2,11 @@ defmodule CacheCommands.PeriodicCommand do
   use GenServer
   require Logger
   alias CacheCommands.{CommandRegistry, Runner}
+  alias __MODULE__.Info
   @timeout Application.get_env(:cache_commands, :timeout)
 
   defmodule State do
-    defstruct [command: nil, runner: nil, timer: nil, refresh: nil, result: nil]
+    defstruct [command: nil, runner: nil, timer: nil, refresh: nil, result: nil, as_of: nil]
   end
 
   def start_link(command) do
@@ -23,6 +24,10 @@ defmodule CacheCommands.PeriodicCommand do
 
   def get(pid, refresh: refresh) do
     GenServer.call(pid, {:get, refresh: 1000 * refresh}, @timeout)
+  end
+
+  def info(pid) do
+    GenServer.call(pid, :info)
   end
 
   def handle_call({:get, refresh: refresh}, _from, state=%{result: nil}) do
@@ -45,6 +50,9 @@ defmodule CacheCommands.PeriodicCommand do
     state
     |> change_interval(refresh)
     |> send_result()
+  end
+  def handle_call(:info, _from, state) do
+    {:reply, get_info(state), state}
   end
 
   def handle_info(:refresh, state) do
@@ -89,8 +97,8 @@ defmodule CacheCommands.PeriodicCommand do
     |> set_interval(refresh)
   end
 
-  defp cache_result(state, result) do
-    %{state | result: result}
+  defp cache_result(state, result, as_of \\ :os.system_time(:second)) do
+    %{state | result: result, as_of: as_of}
   end
 
   defp set_interval(state, interval) do
@@ -99,5 +107,28 @@ defmodule CacheCommands.PeriodicCommand do
 
   defp send_result(state) do
     {:reply, {:ok, state.result}, state}
+  end
+
+  defp get_info(state) do
+    Info.new(
+      command: state.command,
+      interval: refresh_interval(state),
+      last_refreshed: state.as_of,
+      next_refresh: next_refresh(state)
+    )
+  end
+
+  defp refresh_interval(%{refresh: nil}), do: nil
+  defp refresh_interval(%{refresh: refresh}) do
+    div(refresh, 1000)
+  end
+
+  defp next_refresh(%{timer: nil}), do: false
+  defp next_refresh(%{timer: timer}) do
+    Process.read_timer(timer)
+    |> case do
+      n when is_integer(n) -> div(n, 1000)
+      false -> false
+    end
   end
 end
