@@ -50,7 +50,7 @@ handle_print() {
 
 read_raw() {
   local MESSAGE
-  IFS= read -r -d '' -u 3 -n $1 MESSAGE
+  [ "$1" -gt "0" ] && IFS= read -r -d '' -u 3 -n $1 MESSAGE
   echo -n "$MESSAGE"
 }
 
