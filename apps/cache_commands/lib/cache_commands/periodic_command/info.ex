@@ -69,6 +69,7 @@ defmodule CacheCommands.PeriodicCommand.Info do
   def display_last_refreshed(%{last_refreshed: last_refreshed}) when is_integer(last_refreshed) do
     last_refreshed
     |> Timex.from_unix()
+    |> Timex.Timezone.convert(Timex.Timezone.Local.lookup())
     |> Timex.format!("{ANSIC}")
   end
   def display_last_refreshed(_), do: "never"
