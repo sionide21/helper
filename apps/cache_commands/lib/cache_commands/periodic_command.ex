@@ -1,7 +1,7 @@
 defmodule CacheCommands.PeriodicCommand do
   use GenServer
   require Logger
-  alias CacheCommands.{CommandRegistry, Runner}
+  alias CacheCommands.{CommandRegistry, Runner, DB}
   alias __MODULE__.Info
   @timeout Application.get_env(:cache_commands, :timeout)
 
@@ -9,17 +9,25 @@ defmodule CacheCommands.PeriodicCommand do
     defstruct [command: nil, runner: nil, timer: nil, refresh: nil, result: nil, as_of: nil]
   end
 
-  def start_link(command) do
+  def start_link(command) when is_list(command) do
     GenServer.start_link(__MODULE__, [command], name: name(command))
+  end
+  def start_link(state=%State{}) do
+    GenServer.start_link(__MODULE__, [state, recovery: true], name: name(state.command))
   end
 
   defp name(command) do
     {:via, Registry, {CommandRegistry, command}}
   end
 
-  def init([command]) do
+  def init([command]) when is_list(command) do
+    init([%State{command: command}, recovery: false])
+  end
+  def init([state=%State{}, recovery: recovery]) do
     {:ok, runner} = Runner.start_link()
-    {:ok, %State{command: command, runner: runner}}
+    if recovery, do: send(self(), :recover)
+
+    {:ok, %State{state | runner: runner}}
   end
 
   def get(pid, refresh: refresh) do
@@ -38,6 +46,7 @@ defmodule CacheCommands.PeriodicCommand do
         |> schedule_refresh(refresh)
         |> set_interval(refresh)
         |> cache_result(result)
+        |> save_state()
         |> send_result()
       error ->
         {:stop, {:shutdown, error}, error, state}
@@ -49,6 +58,7 @@ defmodule CacheCommands.PeriodicCommand do
   def handle_call({:get, refresh: refresh}, _from, state) do
     state
     |> change_interval(refresh)
+    |> save_state()
     |> send_result()
   end
   def handle_call(:info, _from, state) do
@@ -64,12 +74,20 @@ defmodule CacheCommands.PeriodicCommand do
     state = state
     |> schedule_refresh(state.refresh)
     |> cache_result(result)
+    |> save_state()
 
     {:noreply, state}
   end
   def handle_info({:result, {status, error}}, state) do
     Logger.warn("Error refreshing #{ARGV.to_string state.command} (#{status}): #{inspect error}")
     {:stop, {:shutdown, error}, state}
+  end
+  def handle_info(:recover, state) do
+    last_run = :os.system_time(:seconds) - state.as_of
+    next_run = max(0, refresh_interval(state) - last_run)
+    Logger.debug("Recovering #{ARGV.to_string state.command}... refresh in #{next_run} seconds")
+
+    {:noreply, schedule_refresh(state, 1000 * next_run)}
   end
 
   defp schedule_refresh(state, wait) do
@@ -103,6 +121,12 @@ defmodule CacheCommands.PeriodicCommand do
 
   defp set_interval(state, interval) do
     %{state | refresh: interval}
+  end
+
+  defp save_state(state) do
+    key = ARGV.to_identifier(state.command)
+    DB.write(key, state)
+    state
   end
 
   defp send_result(state) do
