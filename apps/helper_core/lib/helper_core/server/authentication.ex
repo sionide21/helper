@@ -33,33 +33,8 @@ defmodule HelperCore.Server.Authentication do
   end
 
   defp write_code(code) do
-    Path.expand("~/.helper")
-    |> ensure_directory()
-    |> create_file(code)
-    |> ensure_permissions()
-  end
-
-  defp ensure_directory(dir) do
-    dir
-    |> File.mkdir()
-    |> case do
-      :ok -> {:ok, dir}
-      {:error, :eexist} -> {:ok, dir}
-      e -> e
-    end
-  end
-
-  defp create_file({:ok, config_dir}, code) do
-    file = Path.join(config_dir, "auth")
-    file
-    |> File.write([code, "\n"])
-    |> case do
-      :ok -> {:ok, file}
-      e   -> e
-    end
-  end
-
-  def ensure_permissions({:ok, file}) do
-    :ok = File.chmod(file, 0o600)
+    {:ok, auth_file} = HelperCore.Config.file("auth")
+    :ok = File.write(auth_file, [code, "\n"])
+    :ok = File.chmod(auth_file, 0o600)
   end
 end
