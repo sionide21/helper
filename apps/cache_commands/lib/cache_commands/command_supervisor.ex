@@ -8,7 +8,7 @@ defmodule CacheCommands.CommandSupervisor do
 
   def init([]) do
     children = [
-      worker(PeriodicCommand, [], restart: :permanent)
+      worker(PeriodicCommand, [], restart: :transient)
     ]
 
     supervise(children, strategy: :simple_one_for_one)
