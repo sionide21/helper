@@ -7,6 +7,7 @@ defmodule CacheCommands.Application do
     import Supervisor.Spec, warn: false
 
     children = [
+      worker(ClockMonitor, [[name: ClockMonitor]]),
       supervisor(CommandSupervisor, [[name: CommandSupervisor]]),
       supervisor(Registry, [:unique, CommandRegistry]),
       worker(DB, [[name: DB]]),

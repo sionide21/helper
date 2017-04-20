@@ -24,6 +24,7 @@ defmodule CacheCommands.PeriodicCommand do
     init([%State{command: command}, recovery: false])
   end
   def init([state=%State{}, recovery: recovery]) do
+    :ok = ClockMonitor.subscribe()
     {:ok, runner} = Runner.start_link()
     if recovery, do: send(self(), :recover)
 
@@ -89,6 +90,9 @@ defmodule CacheCommands.PeriodicCommand do
 
     {:noreply, schedule_refresh(state, 1000 * next_run)}
   end
+  def handle_info({:clock_changed, {amount, :millisecond}}, state) do
+    {:noreply, correct_timer(state, amount)}
+  end
 
   defp schedule_refresh(state, wait) do
     timer = Process.send_after(self(), :refresh, wait)
@@ -113,6 +117,16 @@ defmodule CacheCommands.PeriodicCommand do
     state
     |> schedule_refresh(new_time)
     |> set_interval(refresh)
+  end
+
+  defp correct_timer(state, shift) do
+    state.timer
+    |> Process.cancel_timer()
+    |> case do
+      remaining when is_integer(remaining) ->
+        schedule_refresh(state, remaining - shift)
+      false -> state
+    end
   end
 
   defp cache_result(state, result, as_of \\ :os.system_time(:second)) do
