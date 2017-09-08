@@ -6,6 +6,11 @@ H.E.L.P.eR. maintains a persistent process that can be accessed over TCP from
 any local application. This enables orchestration between CLI shells as well
 as periodic tasks such as cache refresh.
 
+## To Run
+
+```
+elixir --no-halt --erl '+C multi_time_warp' -S mix app.start
+```
 ## Features (Wish List)
 
 ### Cache and periodically refresh results of a slow lookup
