@@ -124,7 +124,7 @@ defmodule CacheCommands.PeriodicCommand do
     |> Process.cancel_timer()
     |> case do
       remaining when is_integer(remaining) ->
-        schedule_refresh(state, remaining - shift)
+        schedule_refresh(state,  max(0, remaining - shift))
       false -> state
     end
   end
