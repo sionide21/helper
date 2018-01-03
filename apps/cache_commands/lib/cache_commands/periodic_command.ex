@@ -6,7 +6,7 @@ defmodule CacheCommands.PeriodicCommand do
   @timeout Application.get_env(:cache_commands, :timeout)
 
   defmodule State do
-    defstruct [command: nil, runner: nil, timer: nil, refresh: nil, result: nil, as_of: nil]
+    defstruct [command: nil, runner: nil, timer: nil, refresh: nil, result: nil, status: nil, as_of: nil]
   end
 
   def start_link(command) when is_list(command) do
@@ -26,7 +26,12 @@ defmodule CacheCommands.PeriodicCommand do
   def init([state=%State{}, recovery: recovery]) do
     :ok = ClockMonitor.subscribe()
     {:ok, runner} = Runner.start_link()
-    if recovery, do: send(self(), :recover)
+    state = if recovery do
+      send(self(), :recover)
+      recover_state(state)
+    else
+      state
+    end
 
     {:ok, %State{state | runner: runner}}
   end
@@ -81,7 +86,12 @@ defmodule CacheCommands.PeriodicCommand do
   end
   def handle_info({:result, {status, error}}, state) do
     Logger.warn("Error refreshing #{ARGV.to_string state.command} (#{status}): #{inspect error}")
-    {:stop, {:shutdown, error}, state}
+    state = state
+    |> schedule_refresh(state.refresh)
+    |> record_error(status)
+    |> save_state()
+
+    {:noreply, state}
   end
   def handle_info(:recover, state) do
     last_run = :os.system_time(:seconds) - state.as_of
@@ -130,7 +140,11 @@ defmodule CacheCommands.PeriodicCommand do
   end
 
   defp cache_result(state, result, as_of \\ :os.system_time(:second)) do
-    %{state | result: result, as_of: as_of}
+    %{state | result: result, status: 0, as_of: as_of}
+  end
+
+  defp record_error(state, code) do
+    %{state | status: code}
   end
 
   defp set_interval(state, interval) do
@@ -143,6 +157,11 @@ defmodule CacheCommands.PeriodicCommand do
     state
   end
 
+  # Ensure persisted state is compatible with current running version
+  defp recover_state(state) do
+    Map.put_new(state, :status, nil)
+  end
+
   defp send_result(state) do
     {:reply, {:ok, state.result}, state}
   end
@@ -152,6 +171,7 @@ defmodule CacheCommands.PeriodicCommand do
       command: state.command,
       interval: refresh_interval(state),
       last_refreshed: state.as_of,
+      status: state.status,
       next_refresh: next_refresh(state)
     )
   end

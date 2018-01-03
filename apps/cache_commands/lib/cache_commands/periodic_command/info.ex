@@ -1,5 +1,5 @@
 defmodule CacheCommands.PeriodicCommand.Info do
-  defstruct [:command, :interval, :last_refreshed, :next_refresh]
+  defstruct [:command, :interval, :last_refreshed, :status, :next_refresh]
 
   def new(values) do
     struct(__MODULE__, values)
@@ -74,12 +74,18 @@ defmodule CacheCommands.PeriodicCommand.Info do
   end
   def display_last_refreshed(_), do: "never"
 
+  def display_last_status(%{status: status}) when is_integer(status) do
+    to_string(status)
+  end
+  def display_last_status(_), do: "-"
+
   defp headers do
     [
       {"ID",           &id/1},
       {"CMD",          &to_string/1},
       {"INTERVAL",     &display_interval/1},
       {"LAST REFRESH", &display_last_refreshed/1},
+      {"EXIT CODE",    &display_last_status/1},
       {"NEXT REFRESH", &display_next_refresh/1},
     ]
   end
